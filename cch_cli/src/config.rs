@@ -1,7 +1,10 @@
+#![allow(clippy::regex_creation_in_loops)]
+#![allow(clippy::unnecessary_map_or)]
+
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
-use std::path::Path;
 use std::fs;
+use std::path::Path;
 
 use crate::models::Rule;
 
@@ -132,7 +135,9 @@ impl Config {
 
     /// Get enabled rules sorted by priority (highest first)
     pub fn enabled_rules(&self) -> Vec<&Rule> {
-        let mut rules: Vec<&Rule> = self.rules.iter()
+        let mut rules: Vec<&Rule> = self
+            .rules
+            .iter()
             .filter(|r| r.metadata.as_ref().map_or(true, |m| m.enabled))
             .collect();
 
@@ -169,30 +174,28 @@ mod tests {
     fn test_config_validation() {
         let config = Config {
             version: "1.0".to_string(),
-            rules: vec![
-                Rule {
-                    name: "test-rule".to_string(),
-                    description: Some("Test rule".to_string()),
-                    matchers: crate::models::Matchers {
-                        tools: Some(vec!["Bash".to_string()]),
-                        extensions: None,
-                        directories: None,
-                        operations: None,
-                        command_match: None,
-                    },
-                    actions: crate::models::Actions {
-                        inject: None,
-                        run: None,
-                        block: Some(true),
-                        block_if_match: None,
-                    },
-                    metadata: Some(RuleMetadata {
-                        priority: 0,
-                        timeout: 5,
-                        enabled: true,
-                    }),
-                }
-            ],
+            rules: vec![Rule {
+                name: "test-rule".to_string(),
+                description: Some("Test rule".to_string()),
+                matchers: crate::models::Matchers {
+                    tools: Some(vec!["Bash".to_string()]),
+                    extensions: None,
+                    directories: None,
+                    operations: None,
+                    command_match: None,
+                },
+                actions: crate::models::Actions {
+                    inject: None,
+                    run: None,
+                    block: Some(true),
+                    block_if_match: None,
+                },
+                metadata: Some(RuleMetadata {
+                    priority: 0,
+                    timeout: 5,
+                    enabled: true,
+                }),
+            }],
             settings: Settings::default(),
         };
 
@@ -239,7 +242,7 @@ mod tests {
                         block_if_match: None,
                     },
                     metadata: None,
-                }
+                },
             ],
             settings: Settings::default(),
         };
@@ -295,7 +298,7 @@ mod tests {
                         timeout: 5,
                         enabled: true,
                     }),
-                }
+                },
             ],
             settings: Settings::default(),
         };

@@ -1,6 +1,5 @@
-use serde::{Deserialize, Serialize};
 use chrono::{DateTime, Utc};
-
+use serde::{Deserialize, Serialize};
 
 /// Configuration entry defining policy enforcement logic
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]

@@ -18,7 +18,9 @@ pub async fn run(limit: usize, since: Option<String>) -> Result<()> {
         if let Ok(since_time) = DateTime::parse_from_rfc3339(&since_str) {
             filters.since = Some(since_time.with_timezone(&Utc));
         } else {
-            println!("Warning: Invalid since timestamp format. Use RFC3339 format (e.g., 2024-01-01T00:00:00Z)");
+            println!(
+                "Warning: Invalid since timestamp format. Use RFC3339 format (e.g., 2024-01-01T00:00:00Z)"
+            );
         }
     }
 
@@ -30,8 +32,10 @@ pub async fn run(limit: usize, since: Option<String>) -> Result<()> {
     }
 
     println!("Found {} log entries:", entries.len());
-    println!("{:<25} {:<15} {:<12} {:<10} {:<8} {:<6}",
-             "Timestamp", "Event", "Tool", "Rules", "Outcome", "Time");
+    println!(
+        "{:<25} {:<15} {:<12} {:<10} {:<8} {:<6}",
+        "Timestamp", "Event", "Tool", "Rules", "Outcome", "Time"
+    );
 
     for entry in entries {
         let tool = entry.tool_name.as_deref().unwrap_or("-");
@@ -42,13 +46,15 @@ pub async fn run(limit: usize, since: Option<String>) -> Result<()> {
             Outcome::Inject => "INJECT",
         };
 
-        println!("{:<25} {:<15} {:<12} {:<10} {:<8} {:>6}ms",
-                 entry.timestamp.format("%Y-%m-%d %H:%M:%S"),
-                 entry.event_type,
-                 tool,
-                 rules_count,
-                 outcome,
-                 entry.timing.processing_ms);
+        println!(
+            "{:<25} {:<15} {:<12} {:<10} {:<8} {:>6}ms",
+            entry.timestamp.format("%Y-%m-%d %H:%M:%S"),
+            entry.event_type,
+            tool,
+            rules_count,
+            outcome,
+            entry.timing.processing_ms
+        );
     }
 
     Ok(())

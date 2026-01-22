@@ -1,13 +1,13 @@
 use anyhow::Result;
 use clap::{Parser, Subcommand};
 use std::io::{self, Read};
-use tracing::{info, error};
+use tracing::{error, info};
 
+mod cli;
 mod config;
+mod hooks;
 mod logging;
 mod models;
-mod hooks;
-mod cli;
 
 #[derive(Parser)]
 #[command(name = "cch")]
@@ -84,13 +84,15 @@ async fn process_hook_event() -> Result<()> {
         std::process::exit(1);
     }
 
-    let event: models::Event = serde_json::from_str(&buffer)
-        .map_err(|e| {
-            error!("Failed to parse hook event: {}", e);
-            e
-        })?;
+    let event: models::Event = serde_json::from_str(&buffer).map_err(|e| {
+        error!("Failed to parse hook event: {}", e);
+        e
+    })?;
 
-    info!("Processing event: {} ({})", event.event_type, event.session_id);
+    info!(
+        "Processing event: {} ({})",
+        event.event_type, event.session_id
+    );
 
     let response = hooks::process_event(event).await?;
 

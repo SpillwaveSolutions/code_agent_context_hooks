@@ -1,7 +1,6 @@
 use anyhow::Result;
 use chrono::{DateTime, Utc};
-use serde_json;
-use std::fs::{OpenOptions, File};
+use std::fs::{File, OpenOptions};
 use std::io::{BufWriter, Write};
 use std::path::PathBuf;
 use std::sync::Mutex;
@@ -30,10 +29,7 @@ impl Logger {
             std::fs::create_dir_all(parent)?;
         }
 
-        let file = OpenOptions::new()
-            .create(true)
-            .append(true)
-            .open(&path)?;
+        let file = OpenOptions::new().create(true).append(true).open(&path)?;
 
         let writer = BufWriter::new(file);
 
@@ -44,8 +40,7 @@ impl Logger {
 
     /// Get the default log file path (~/.claude/logs/cch.log)
     pub fn default_log_path() -> PathBuf {
-        let mut path = dirs::home_dir()
-            .expect("Could not determine home directory");
+        let mut path = dirs::home_dir().expect("Could not determine home directory");
         path.push(".claude");
         path.push("logs");
         path.push("cch.log");
@@ -201,7 +196,9 @@ static GLOBAL_LOGGER: OnceLock<Logger> = OnceLock::new();
 /// Initialize the global logger
 pub fn init_global_logger() -> Result<()> {
     let logger = Logger::new()?;
-    GLOBAL_LOGGER.set(logger).map_err(|_| anyhow::anyhow!("Logger already initialized"))?;
+    GLOBAL_LOGGER
+        .set(logger)
+        .map_err(|_| anyhow::anyhow!("Logger already initialized"))?;
     Ok(())
 }
 
@@ -276,8 +273,8 @@ impl Default for LogRotator {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::models::{LogMetadata, LogTiming, Outcome};
     use tempfile::NamedTempFile;
-    use crate::models::{LogTiming, Outcome, LogMetadata};
 
     #[tokio::test]
     async fn test_logger() {

@@ -3,12 +3,12 @@ use regex::Regex;
 
 use std::path::Path;
 use tokio::process::Command;
-use tokio::time::{timeout, Duration};
+use tokio::time::{Duration, timeout};
 
 use crate::config::Config;
 use crate::logging::log_entry;
 use crate::models::LogMetadata;
-use crate::models::{Event, Response, Rule, Timing, LogEntry, LogTiming, Outcome};
+use crate::models::{Event, LogEntry, LogTiming, Outcome, Response, Rule, Timing};
 
 /// Process a hook event and return the appropriate response
 pub async fn process_event(event: Event) -> Result<Response> {
@@ -39,7 +39,10 @@ pub async fn process_event(event: Event) -> Result<Response> {
             rules_evaluated: config.enabled_rules().len(),
         },
         metadata: Some(LogMetadata {
-            injected_files: response.context.as_ref().map(|_| vec!["injected".to_string()]),
+            injected_files: response
+                .context
+                .as_ref()
+                .map(|_| vec!["injected".to_string()]),
             validator_output: None,
         }),
     };
@@ -58,7 +61,10 @@ pub async fn process_event(event: Event) -> Result<Response> {
 }
 
 /// Evaluate all enabled rules against an event
-async fn evaluate_rules<'a>(event: &'a Event, config: &'a Config) -> Result<(Vec<&'a Rule>, Response)> {
+async fn evaluate_rules<'a>(
+    event: &'a Event,
+    config: &'a Config,
+) -> Result<(Vec<&'a Rule>, Response)> {
     let mut matched_rules = Vec::new();
     let mut response = Response::allow();
 
@@ -114,7 +120,10 @@ fn matches_rule(event: &Event, rule: &Rule) -> bool {
                     .and_then(|ext| ext.to_str())
                     .unwrap_or("");
 
-                if !extensions.iter().any(|ext| ext == &format!(".{}", path_ext)) {
+                if !extensions
+                    .iter()
+                    .any(|ext| ext == &format!(".{}", path_ext))
+                {
                     return false;
                 }
             }
@@ -130,8 +139,8 @@ fn matches_rule(event: &Event, rule: &Rule) -> bool {
 
                 if !directories.iter().any(|dir| {
                     // Simple glob matching - in production, use a proper glob library
-                    path_str.contains(dir.trim_end_matches("/**")) ||
-                    path_str.contains(dir.trim_end_matches("/*"))
+                    path_str.contains(dir.trim_end_matches("/**"))
+                        || path_str.contains(dir.trim_end_matches("/*"))
                 }) {
                     return false;
                 }
@@ -157,20 +166,28 @@ async fn execute_rule_actions(event: &Event, rule: &Rule, config: &Config) -> Re
     // Handle blocking
     if let Some(block) = actions.block {
         if block {
-            return Ok(Response::block(format!("Blocked by rule '{}': {}",
+            return Ok(Response::block(format!(
+                "Blocked by rule '{}': {}",
                 rule.name,
-                rule.description.as_deref().unwrap_or("No description"))));
+                rule.description.as_deref().unwrap_or("No description")
+            )));
         }
     }
 
     // Handle conditional blocking
     if let Some(ref pattern) = actions.block_if_match {
         if let Some(ref tool_input) = event.tool_input {
-            if let Some(content) = tool_input.get("newString").or_else(|| tool_input.get("content")).and_then(|c| c.as_str()) {
+            if let Some(content) = tool_input
+                .get("newString")
+                .or_else(|| tool_input.get("content"))
+                .and_then(|c| c.as_str())
+            {
                 if let Ok(regex) = Regex::new(pattern) {
                     if regex.is_match(content) {
-                        return Ok(Response::block(format!("Content blocked by rule '{}': matches pattern '{}'",
-                            rule.name, pattern)));
+                        return Ok(Response::block(format!(
+                            "Content blocked by rule '{}': matches pattern '{}'",
+                            rule.name, pattern
+                        )));
                     }
                 }
             }
@@ -216,8 +233,15 @@ async fn read_context_file(path: &str) -> Result<String> {
 }
 
 /// Execute a validator script
-async fn execute_validator_script(event: &Event, script_path: &str, rule: &Rule, config: &Config) -> Result<Response> {
-    let timeout_duration = rule.metadata.as_ref()
+async fn execute_validator_script(
+    event: &Event,
+    script_path: &str,
+    rule: &Rule,
+    config: &Config,
+) -> Result<Response> {
+    let timeout_duration = rule
+        .metadata
+        .as_ref()
         .map(|m| m.timeout)
         .unwrap_or(config.settings.script_timeout);
 
@@ -227,7 +251,7 @@ async fn execute_validator_script(event: &Event, script_path: &str, rule: &Rule,
     command.stderr(std::process::Stdio::piped());
 
     let child_result = command.spawn();
-    
+
     let mut child = match child_result {
         Ok(c) => c,
         Err(e) => {
@@ -244,13 +268,17 @@ async fn execute_validator_script(event: &Event, script_path: &str, rule: &Rule,
         let event_json = serde_json::to_string(event)?;
         tokio::io::AsyncWriteExt::write_all(stdin, event_json.as_bytes()).await?;
     }
-    
+
     // Close stdin to signal end of input
     drop(child.stdin.take());
 
     // Wait for script completion with timeout
-    let output_result = timeout(Duration::from_secs(timeout_duration as u64), child.wait_with_output()).await;
-    
+    let output_result = timeout(
+        Duration::from_secs(timeout_duration as u64),
+        child.wait_with_output(),
+    )
+    .await;
+
     let output = match output_result {
         Ok(Ok(o)) => o,
         Ok(Err(e)) => {
@@ -261,7 +289,11 @@ async fn execute_validator_script(event: &Event, script_path: &str, rule: &Rule,
             return Err(e.into());
         }
         Err(_) => {
-            tracing::warn!("Validator script '{}' timed out after {}s", script_path, timeout_duration);
+            tracing::warn!(
+                "Validator script '{}' timed out after {}s",
+                script_path,
+                timeout_duration
+            );
             if config.settings.fail_open {
                 return Ok(Response::allow());
             }
@@ -314,8 +346,8 @@ fn merge_responses(mut existing: Response, new: Response) -> Response {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::models::{Actions, EventType, Matchers};
     use chrono::Utc;
-    use crate::models::{EventType, Matchers, Actions};
 
     #[tokio::test]
     async fn test_rule_matching() {

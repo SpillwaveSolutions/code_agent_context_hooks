@@ -3,6 +3,8 @@
 //! Provides helpers for setting up test environments, running the CLI,
 //! and generating test evidence in JSON format.
 
+#![allow(dead_code)]
+
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Output;
@@ -89,17 +91,17 @@ pub fn read_fixture(relative: &str) -> String {
 /// Create a temporary test directory with hooks configuration
 pub fn setup_test_env(config_name: &str) -> tempfile::TempDir {
     let temp_dir = tempfile::tempdir().expect("Failed to create temp dir");
-    
+
     // Create .claude directory
     let claude_dir = temp_dir.path().join(".claude");
     fs::create_dir_all(&claude_dir).expect("Failed to create .claude dir");
-    
+
     // Copy hooks configuration
     let config_src = fixture_path(&format!("hooks/{config_name}"));
     let config_dst = claude_dir.join("hooks.yaml");
     fs::copy(&config_src, &config_dst)
         .unwrap_or_else(|e| panic!("Failed to copy config {}: {e}", config_src.display()));
-    
+
     temp_dir
 }
 
@@ -110,7 +112,9 @@ pub struct Timer {
 
 impl Timer {
     pub fn start() -> Self {
-        Self { start: Instant::now() }
+        Self {
+            start: Instant::now(),
+        }
     }
 
     pub fn elapsed_ms(&self) -> u64 {
@@ -141,7 +145,7 @@ impl CchResponse {
             let stderr = String::from_utf8_lossy(&output.stderr);
             return Err(format!("Command failed: {stderr}"));
         }
-        
+
         let stdout = String::from_utf8_lossy(&output.stdout);
         serde_json::from_str(&stdout)
             .map_err(|e| format!("Failed to parse response: {e}\nOutput: {stdout}"))

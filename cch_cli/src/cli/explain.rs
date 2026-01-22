@@ -27,7 +27,11 @@ pub async fn run(event_id: String) -> Result<()> {
     println!();
 
     for (i, entry) in entries.iter().enumerate() {
-        println!("Entry {}: {}", i + 1, entry.timestamp.format("%Y-%m-%d %H:%M:%S"));
+        println!(
+            "Entry {}: {}",
+            i + 1,
+            entry.timestamp.format("%Y-%m-%d %H:%M:%S")
+        );
         println!("  Event Type: {}", entry.event_type);
         println!("  Tool: {}", entry.tool_name.as_deref().unwrap_or("N/A"));
         println!("  Outcome: {:?}", entry.outcome);
@@ -56,9 +60,18 @@ pub async fn run(event_id: String) -> Result<()> {
     }
 
     // Summary
-    let blocked_count = entries.iter().filter(|e| matches!(e.outcome, Outcome::Block)).count();
-    let injected_count = entries.iter().filter(|e| matches!(e.outcome, Outcome::Inject)).count();
-    let allowed_count = entries.iter().filter(|e| matches!(e.outcome, Outcome::Allow)).count();
+    let blocked_count = entries
+        .iter()
+        .filter(|e| matches!(e.outcome, Outcome::Block))
+        .count();
+    let injected_count = entries
+        .iter()
+        .filter(|e| matches!(e.outcome, Outcome::Inject))
+        .count();
+    let allowed_count = entries
+        .iter()
+        .filter(|e| matches!(e.outcome, Outcome::Allow))
+        .count();
 
     println!("Summary:");
     println!("  Blocked: {}", blocked_count);

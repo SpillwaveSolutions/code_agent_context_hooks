@@ -15,20 +15,18 @@ pub async fn run(config_path: Option<String>) -> Result<()> {
 
         // Create default config
         let default_config = Config::default();
-        let yaml = serde_yaml::to_string(&default_config)
-            .context("Failed to serialize default config")?;
+        let yaml =
+            serde_yaml::to_string(&default_config).context("Failed to serialize default config")?;
 
         std::fs::create_dir_all(Path::new(&config_path).parent().unwrap_or(Path::new(".")))?;
-        std::fs::write(&config_path, yaml)
-            .context("Failed to write default config")?;
+        std::fs::write(&config_path, yaml).context("Failed to write default config")?;
 
         println!("Created default configuration at: {}", config_path);
         return Ok(());
     }
 
     // Load and validate existing config
-    let config = Config::from_file(&config_path)
-        .context("Failed to load configuration")?;
+    let config = Config::from_file(&config_path).context("Failed to load configuration")?;
 
     println!("✓ Configuration syntax is valid");
     println!("✓ Version: {}", config.version);
@@ -42,7 +40,11 @@ pub async fn run(config_path: Option<String>) -> Result<()> {
     } else {
         println!("✓ Rules validated successfully");
         for rule in enabled_rules {
-            println!("  - {}: {}", rule.name, rule.description.as_deref().unwrap_or("No description"));
+            println!(
+                "  - {}: {}",
+                rule.name,
+                rule.description.as_deref().unwrap_or("No description")
+            );
         }
     }
 
