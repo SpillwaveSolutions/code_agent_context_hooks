@@ -1,0 +1,14 @@
+# Rust formatting configuration (stable options only)
+edition = "2021"
+max_width = 100
+hard_tabs = false
+tab_spaces = 4
+newline_style = "Auto"
+use_small_heuristics = "Default"
+reorder_imports = true
+reorder_modules = true
+remove_nested_parens = true
+match_arm_leading_pipes = "Never"
+use_field_init_shorthand = false
+force_explicit_abi = true
+fn_params_layout = "Tall"

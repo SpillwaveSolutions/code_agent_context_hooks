@@ -1,0 +1,14 @@
+# Clippy configuration for CCH
+# See: https://rust-lang.github.io/rust-clippy/master/index.html#Configuration
+
+# MSRV for Rust 2024 edition
+msrv = "1.85.0"
+
+# Cognitive complexity threshold
+cognitive-complexity-threshold = 25
+
+# Maximum function parameters
+too-many-arguments-threshold = 8
+
+# Maximum lines per function
+too-many-lines-threshold = 150
