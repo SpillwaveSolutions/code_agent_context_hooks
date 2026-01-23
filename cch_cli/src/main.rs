@@ -24,6 +24,49 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Commands {
+    /// Initialize CCH configuration in current project
+    Init {
+        /// Overwrite existing configuration
+        #[arg(short, long)]
+        force: bool,
+        /// Create example context and validator files
+        #[arg(long)]
+        with_examples: bool,
+    },
+    /// Install CCH hook into Claude Code settings
+    Install {
+        /// Install globally instead of project-local
+        #[arg(short, long)]
+        global: bool,
+        /// Path to CCH binary (auto-detected if not specified)
+        #[arg(short, long)]
+        binary: Option<String>,
+    },
+    /// Uninstall CCH hook from Claude Code settings
+    Uninstall {
+        /// Uninstall from global settings instead of project-local
+        #[arg(short, long)]
+        global: bool,
+    },
+    /// Simulate an event to test rules
+    Debug {
+        /// Event type: PreToolUse, PostToolUse, SessionStart, PermissionRequest
+        event_type: String,
+        /// Tool name (e.g., Bash, Write, Read)
+        #[arg(short, long)]
+        tool: Option<String>,
+        /// Command or pattern to test (for Bash/Glob/Grep)
+        #[arg(short, long)]
+        command: Option<String>,
+        /// File path (for Write/Edit/Read)
+        #[arg(short, long)]
+        path: Option<String>,
+        /// Show verbose rule evaluation
+        #[arg(short, long)]
+        verbose: bool,
+    },
+    /// Start interactive debug mode
+    Repl,
     /// Validate configuration file
     Validate {
         /// Path to configuration file
@@ -64,6 +107,37 @@ async fn main() -> Result<()> {
     let config = config::Config::load(None)?;
 
     match cli.command {
+        Some(Commands::Init { force, with_examples }) => {
+            cli::init::run(force, with_examples).await?;
+        }
+        Some(Commands::Install { global, binary }) => {
+            let scope = if global {
+                cli::install::Scope::Global
+            } else {
+                cli::install::Scope::Project
+            };
+            cli::install::run(scope, binary).await?;
+        }
+        Some(Commands::Uninstall { global }) => {
+            let scope = if global {
+                cli::install::Scope::Global
+            } else {
+                cli::install::Scope::Project
+            };
+            cli::install::uninstall(scope).await?;
+        }
+        Some(Commands::Debug {
+            event_type,
+            tool,
+            command,
+            path,
+            verbose,
+        }) => {
+            cli::debug::run(event_type, tool, command, path, verbose).await?;
+        }
+        Some(Commands::Repl) => {
+            cli::debug::interactive().await?;
+        }
         Some(Commands::Validate { config }) => {
             cli::validate::run(config).await?;
         }

@@ -1,7 +1,7 @@
 # Implementation Plan: CRD-001 Enhanced Logging
 
 **Feature ID:** CRD-001  
-**Spec:** `.specify/features/enhanced-logging/spec.md`  
+**Spec:** `.speckit/features/enhanced-logging/spec.md`  
 **Branch:** `002-enhanced-logging`  
 **Created:** 2026-01-22
 
@@ -579,7 +579,7 @@ After implementation, verify:
 
 ## References
 
-- **Spec:** `.specify/features/enhanced-logging/spec.md`
+- **Spec:** `.speckit/features/enhanced-logging/spec.md`
 - **PRD:** `docs/prds/change_request/CRD-001-enhanced-logging.md`
 - **Current Models:** `cch_cli/src/models.rs`
 - **Current Hooks:** `cch_cli/src/hooks.rs`

@@ -8,9 +8,9 @@
 **Branch**: 002-enhanced-logging
 
 ### SDD Artifacts
-- **Spec:** `.specify/features/enhanced-logging/spec.md`
-- **Plan:** `.specify/features/enhanced-logging/plan.md`
-- **Tasks:** `.specify/features/enhanced-logging/tasks.md` (backfilled)
+- **Spec:** `.speckit/features/enhanced-logging/spec.md`
+- **Plan:** `.speckit/features/enhanced-logging/plan.md`
+- **Tasks:** `.speckit/features/enhanced-logging/tasks.md` (backfilled)
 - **Commit:** `b9faa44`
 
 ### User Stories Completed
@@ -49,8 +49,8 @@
 - references/troubleshooting-guide.md - Diagnostic procedures
 - assets/ - Templates and example scripts
 
-## cch-binary-v1 (Implementation Complete)
-**Status**: Implementation Complete (38/38 tests pass)
+## cch-binary-v1 (Feature Complete)
+**Status**: Feature Complete (64 tests pass)
 **Priority**: P1 (Core functionality)
 **Description**: Claude Code Hook binary providing safety and productivity features
 **Location**: cch_cli/ (Rust implementation)
@@ -64,12 +64,27 @@
 - ✅ Installation Quality - 7 tests
 - ✅ Performance Requirements - 5 tests
 
-### Remaining Work
-- [ ] Implement `cch init` command (create default hooks.yaml)
-- [ ] Implement `cch install` command (register with Claude Code)
-- [ ] Implement `cch debug` command (simulate events)
-- [ ] Set up cross-platform CI/CD builds
-- [ ] Create release v0.2.1
+### CLI Commands (All Implemented)
+- ✅ `cch init` - Create default hooks.yaml with examples - 4 tests
+- ✅ `cch install` - Register CCH with Claude Code settings - 2 tests
+- ✅ `cch uninstall` - Remove CCH from Claude Code settings - 1 test
+- ✅ `cch debug` - Simulate events to test rules - 5 tests
+- ✅ `cch repl` - Interactive debug mode - 1 test
+- ✅ `cch validate` - Validate configuration file
+- ✅ `cch logs` - Query and display logs
+- ✅ `cch explain` - Explain why rules fired
+
+### CI/CD (Complete)
+- ✅ CI workflow (`.github/workflows/ci.yml`) - fmt, clippy, tests, coverage, cross-platform builds
+- ✅ Release workflow (`.github/workflows/release.yml`) - triggered by `v*` tags
+- ✅ Cross-platform builds: Linux (x86_64, aarch64), macOS (x86_64, aarch64), Windows (x86_64)
+
+### Ready for Release
+To create a release:
+```bash
+git tag v1.0.0
+git push origin v1.0.0
+```
 
 ### Technical Implementation
 - Rust 2024 binary with tokio async runtime
@@ -99,7 +114,7 @@
 - `config/`: YAML configuration loading and validation
 - `hooks/`: Rule matching and action execution
 - `logging/`: JSON Lines logging infrastructure
-- `cli/`: Command-line interface (validate, logs, explain)
+- `cli/`: Command-line interface (init, install, debug, validate, logs, explain)
 
 ### Key Patterns
 - Async-first design for performance

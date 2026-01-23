@@ -5,6 +5,7 @@ release/
 *.rs.bk
 *.rlib
 *.prof*
+!.opencode 
 
 # IDEs and editors
 .vscode/
