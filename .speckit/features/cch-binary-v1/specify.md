@@ -75,4 +75,4 @@ This feature is implemented as a Rust binary using:
 - **regex** for pattern matching
 - **tokio** for async operations
 
-The codebase includes comprehensive tests and follows Rust 2021 edition standards with no unsafe code blocks.
+The codebase includes comprehensive tests and follows Rust 2024 edition standards with no unsafe code blocks.

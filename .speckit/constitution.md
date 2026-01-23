@@ -25,7 +25,7 @@
 ## Technology Choices
 
 ### Language & Runtime
-- **Rust 2021 edition**: Modern Rust with stable features
+- **Rust 2024 edition**: Modern Rust with stable features
 - **No unsafe code**: Memory safety guaranteed by compiler
 - **Tokio async runtime**: For efficient async operations
 
