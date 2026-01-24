@@ -262,6 +262,199 @@ Direct commits to `main` bypass code review, risk introducing bugs, and make it 
 
 ---
 
+## Validation Framework (IQ/OQ/PQ)
+
+### Philosophy
+**Governance tools must embody the same rigor they enforce.** CCH, as an AI policy engine, requires mathematical certainty that rules execute consistently across all platforms and conditions. This is achieved through the 3Q validation framework.
+
+Reference: [IQ/OQ/PQ Integration Testing Guide](../docs/IQ_OQ_PQ_IntegrationTesting.md)
+
+### Installation Qualification (IQ)
+
+**Purpose:** Verify software installs correctly per documentation across all target platforms.
+
+**Scope:**
+| Platform | Architecture | Validation Required |
+|----------|--------------|---------------------|
+| macOS | Apple Silicon (ARM64) | Yes |
+| macOS | Intel/AMD (x86_64) | Yes |
+| Windows | x86_64 | Yes |
+| Linux | x86_64, aarch64 | Yes |
+
+**IQ Checklist:**
+- [ ] Binary installs via documented method (cargo, binary download)
+- [ ] `cch --version` returns correct version
+- [ ] `cch init` creates `~/.claude/hooks.yaml`
+- [ ] Log directory exists: `~/.claude/logs/`
+- [ ] Platform-specific checks pass (code signing, permissions)
+- [ ] Claude CLI integration verified
+
+**Evidence Required:**
+- Installation logs (`install.log`)
+- Version verification output
+- Configuration file creation proof
+- Platform-specific verification (codesign on macOS, etc.)
+
+### Operational Qualification (OQ)
+
+**Purpose:** Verify features function correctly in operational environments.
+
+**OQ Test Categories:**
+
+| Category | Test Focus | Minimum Coverage |
+|----------|------------|------------------|
+| Rule Matching | Tool, directory, regex, extension patterns | 100% pattern types |
+| Actions | block, inject, warn, run | 100% action types |
+| Event Types | PreToolUse, PostToolUse, PermissionRequest | 100% event types |
+| Modes | enforce, warn, audit | 100% mode types |
+| Edge Cases | Invalid YAML, missing files, concurrent access | Critical paths |
+
+**OQ Scenarios (Required):**
+1. **Block Force Push** - Verify `git push --force` blocked with audit log
+2. **Context Injection** - Verify context injected for file patterns
+3. **Session Logging** - Verify JSON Lines audit log creation
+4. **Permission Context** - Verify context provided during permission requests
+5. **Mode Behavior** - Verify warn mode logs but allows, audit mode logs only
+
+**Evidence Required:**
+- Test execution reports (pass/fail per scenario)
+- Event payloads that triggered rules (JSON)
+- Log entries showing decisions
+- Screenshots/output showing expected behavior
+
+### Performance Qualification (PQ)
+
+**Purpose:** Verify system meets performance requirements under realistic load.
+
+**PQ Requirements:**
+
+| Metric | Requirement | Measurement |
+|--------|-------------|-------------|
+| Latency (simple rule) | <5ms p95 | Benchmark suite |
+| Latency (complex regex) | <10ms p95 | Benchmark suite |
+| Throughput | >1000 events/sec | Load test |
+| Memory (sustained) | <50MB RSS | 24-hour test |
+| Memory leaks | None detected | 7-day stress test |
+
+**PQ Test Protocol:**
+1. Run latency benchmarks across all platforms
+2. Execute sustained load test (1000 events/sec for 1 hour)
+3. Run 7-day stress test with realistic workload
+4. Monitor and record resource utilization
+5. Compare results against platform baselines
+
+**Evidence Required:**
+- Benchmark results with percentile distributions
+- Resource utilization graphs
+- Stability metrics over extended periods
+- Platform comparison data
+
+### Evidence Collection Standards
+
+**Directory Structure:**
+```
+docs/validation/
+├── iq/
+│   └── {date}/
+│       ├── macos-arm64/
+│       ├── macos-intel/
+│       ├── windows/
+│       └── linux/
+├── oq/
+│   └── {date}/
+│       ├── test-results.json
+│       ├── scenarios/
+│       └── evidence/
+├── pq/
+│   └── {date}/
+│       ├── benchmarks/
+│       ├── load-tests/
+│       └── stability/
+└── sign-off/
+    └── v{version}-validation-report.md
+```
+
+**Evidence Naming Convention:**
+- `iq-{platform}-{date}.md` - IQ reports
+- `oq-{test-id}-{date}.json` - OQ test results
+- `pq-benchmark-{platform}-{date}.csv` - PQ metrics
+
+**Retention Policy:**
+- Major releases: Indefinite retention
+- Minor releases: Minimum 2 years
+- Patch releases: Minimum 1 year
+
+### Validation Workflow
+
+**Pre-Release Validation (Required):**
+1. Run IQ on all target platforms
+2. Execute full OQ test suite
+3. Complete PQ benchmarks
+4. Generate validation report
+5. Obtain sign-off before release
+
+**Continuous Validation (Automated):**
+- Integration tests run on every PR (OQ subset)
+- Nightly full OQ suite on main branch
+- Weekly PQ benchmarks to detect regression
+- Platform-specific IQ on release candidates
+
+**Validation Gates:**
+- **PR Merge:** Integration tests pass (OQ subset)
+- **Release Candidate:** Full IQ + OQ pass on all platforms
+- **Production Release:** IQ + OQ + PQ pass with signed evidence
+
+### Integration Test Requirements
+
+**Before Any Release:**
+```bash
+# Run integration tests (OQ subset)
+task integration-test
+
+# All 4 test cases must pass:
+# - 01-block-force-push
+# - 02-context-injection
+# - 03-session-logging
+# - 04-permission-explanations
+```
+
+**Integration tests are mandatory gate checks.** The release preflight script (`preflight-check.sh`) will fail if integration tests do not pass.
+
+### Sign-Off Template
+
+```markdown
+## Validation Sign-Off - CCH v{VERSION}
+
+**Validation Date:** {DATE}
+**Product:** Claude Context Hooks (CCH)
+**Version:** {VERSION}
+
+### IQ Results
+- [ ] macOS ARM64: PASSED/FAILED (evidence: docs/validation/iq/{date}/macos-arm64/)
+- [ ] macOS Intel: PASSED/FAILED
+- [ ] Windows: PASSED/FAILED
+- [ ] Linux: PASSED/FAILED
+
+**IQ Approved By:** _______________ Date: ___________
+
+### OQ Results
+- [ ] All test scenarios passed ({count}/{total})
+- Evidence: docs/validation/oq/{date}/
+
+**OQ Approved By:** _______________ Date: ___________
+
+### PQ Results
+- [ ] Latency requirements met on all platforms
+- [ ] Stability test passed ({duration})
+- Evidence: docs/validation/pq/{date}/
+
+**PQ Approved By:** _______________ Date: ___________
+
+**Overall Validation Status:** APPROVED / NOT APPROVED FOR RELEASE
+```
+
+---
+
 ## Platform Support
 
 ### CCH Core

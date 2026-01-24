@@ -1,0 +1,12 @@
+# PQ Evidence Directory
+
+Place Performance Qualification evidence in dated subdirectories.
+
+Example:
+```
+pq/
+└── 2025-01-23/
+    ├── benchmarks/
+    ├── load-tests/
+    └── stability/
+```
