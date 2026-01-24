@@ -1,5 +1,73 @@
 # Discovered Features
 
+## rulez-ui (Specified)
+**Status**: Specified
+**Priority**: P1 (User Experience)
+**Description**: Native desktop application for visualizing, editing, validating, and debugging CCH configurations
+**Location**: rulez_ui/ (Tauri + React implementation)
+**PRD**: docs/prds/rulez_ui_prd.md
+**Plan**: docs/plans/rulez_ui_plan.md
+
+### SDD Artifacts
+- **Spec:** `.speckit/features/rulez-ui/spec.md`
+- **Tasks:** `.speckit/features/rulez-ui/tasks.md`
+- **Status:** Ready for Implementation
+
+### User Stories (Phase 1 MVP)
+- [ ] US-RUI-01: YAML Editor with Syntax Highlighting
+- [ ] US-RUI-02: Real-time Schema Validation
+- [ ] US-RUI-03: Multi-file Configuration Management
+- [ ] US-RUI-04: Debug Simulation
+- [ ] US-RUI-05: Rule Tree Visualization
+- [ ] US-RUI-06: Theme Support
+
+### Technology Stack
+- **Runtime**: Bun (TypeScript/React operations)
+- **Frontend**: React 18 + TypeScript + Tailwind CSS 4
+- **Editor**: Monaco Editor + monaco-yaml
+- **Desktop**: Tauri 2.0 (Rust backend)
+- **State**: Zustand + TanStack Query
+- **Testing**: Bun test (unit) + Playwright (E2E)
+
+### Implementation Phases
+| Phase | Description | Est. Days |
+|-------|-------------|-----------|
+| Phase 1 | MVP (Editor, Validation, Files, Simulator, Tree, Theme) | 9.5 |
+| Phase 2 | Log Viewer | 5-7 |
+| Phase 3 | Advanced Features (templates, regex tester) | 7-10 |
+| Phase 4 | Distribution (installers, auto-update) | 3-5 |
+
+### Platform Support
+- macOS (Intel + Apple Silicon)
+- Linux (x86_64 + ARM64)
+- Windows (x86_64)
+
+---
+
+## phase2-governance (Specified)
+**Status**: Specified
+**Priority**: P2 (Enterprise Readiness)
+**Description**: Policy governance layer with modes, metadata, priorities, and enhanced explainability
+**Location**: cch_cli/ (Rust implementation extension)
+**PRD**: docs/prds/phase2_prd.md
+
+### Key Features (Not Yet Implemented)
+- [ ] Policy Modes: `enforce | warn | audit`
+- [ ] Rule Priority: Higher numbers run first
+- [ ] Rule Metadata: author, created_by, reason, confidence, tags
+- [ ] Enhanced `cch explain rule` command
+- [ ] Conflict Resolution: Deterministic mode/priority ordering
+- [ ] Trust Levels: local, verified, untrusted (informational only)
+- [ ] Policy Packs concept (roadmap)
+
+### Design Philosophy
+- **Backward Compatible**: All new features are optional
+- **Auditable**: Full provenance in logs and explain output
+- **Gradual Rollout**: audit mode for testing, warn for soft rules
+- **Enterprise Ready**: SOC2 evidence, governance dashboards
+
+---
+
 ## enhanced-logging (Completed)
 **Status**: Completed
 **Priority**: P2 (Observability enhancement)
