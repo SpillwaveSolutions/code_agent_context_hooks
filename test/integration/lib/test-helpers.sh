@@ -18,7 +18,8 @@ LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 INTEGRATION_DIR="$(cd "$LIB_DIR/.." && pwd)"
 PROJECT_ROOT="$(cd "$INTEGRATION_DIR/../.." && pwd)"
 CCH_CLI_DIR="$PROJECT_ROOT/cch_cli"
-CCH_BINARY="$CCH_CLI_DIR/target/release/cch"
+# Note: Cargo workspace builds to PROJECT_ROOT/target, not CCH_CLI_DIR/target
+CCH_BINARY="$PROJECT_ROOT/target/release/cch"
 CCH_LOG="$HOME/.claude/logs/cch.log"
 RESULTS_DIR="$INTEGRATION_DIR/results"
 
@@ -62,7 +63,8 @@ check_prerequisites() {
 
 build_cch() {
     echo -e "${BLUE}Building CCH binary...${NC}"
-    (cd "$CCH_CLI_DIR" && cargo build --release)
+    # Build from project root (Cargo workspace)
+    (cd "$PROJECT_ROOT" && cargo build --release)
     if [ ! -f "$CCH_BINARY" ]; then
         echo -e "${RED}ERROR - Failed to build CCH binary${NC}"
         exit 1
@@ -101,8 +103,10 @@ setup_workspace() {
     cp -r "$use_case_dir"/* "$TEST_TEMP_DIR/" 2>/dev/null || true
     cp -r "$use_case_dir"/.[!.]* "$TEST_TEMP_DIR/" 2>/dev/null || true
     
-    echo -e "  ${GREEN}+${NC} Created test workspace - $TEST_TEMP_DIR"
+    # Log to stderr so it doesn't corrupt function return value
+    echo -e "  ${GREEN}+${NC} Created test workspace - $TEST_TEMP_DIR" >&2
     
+    # Return the path on stdout
     echo "$TEST_TEMP_DIR"
 }
 
