@@ -1,6 +1,119 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
+// =============================================================================
+// Phase 2 Governance Types
+// =============================================================================
+
+/// Policy enforcement mode for rules
+///
+/// Controls how a rule behaves when it matches:
+/// - `Enforce`: Normal behavior - blocks, injects, or runs validators
+/// - `Warn`: Never blocks, injects warning context instead
+/// - `Audit`: Logs only, no blocking or injection
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum PolicyMode {
+    /// Normal enforcement - blocks, injects, or runs validators
+    #[default]
+    Enforce,
+    /// Never blocks, injects warning context instead
+    Warn,
+    /// Logs only, no blocking or injection
+    Audit,
+}
+
+impl std::fmt::Display for PolicyMode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            PolicyMode::Enforce => write!(f, "enforce"),
+            PolicyMode::Warn => write!(f, "warn"),
+            PolicyMode::Audit => write!(f, "audit"),
+        }
+    }
+}
+
+/// Confidence level for rule metadata
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum Confidence {
+    High,
+    Medium,
+    Low,
+}
+
+impl std::fmt::Display for Confidence {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Confidence::High => write!(f, "high"),
+            Confidence::Medium => write!(f, "medium"),
+            Confidence::Low => write!(f, "low"),
+        }
+    }
+}
+
+/// Decision outcome for logging
+#[allow(dead_code)] // Used in Phase 2.2 (enhanced logging)
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum Decision {
+    /// Operation was allowed to proceed
+    Allowed,
+    /// Operation was blocked
+    Blocked,
+    /// Warning was issued but operation proceeded
+    Warned,
+    /// Rule matched but only logged (audit mode)
+    Audited,
+}
+
+impl std::fmt::Display for Decision {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Decision::Allowed => write!(f, "allowed"),
+            Decision::Blocked => write!(f, "blocked"),
+            Decision::Warned => write!(f, "warned"),
+            Decision::Audited => write!(f, "audited"),
+        }
+    }
+}
+
+/// Governance metadata for rules - provenance and documentation
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
+pub struct GovernanceMetadata {
+    /// Who authored this rule
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub author: Option<String>,
+
+    /// Source that created this rule (e.g., "react-skill@2.1.0")
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub created_by: Option<String>,
+
+    /// Why this rule exists
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub reason: Option<String>,
+
+    /// Confidence level in this rule
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub confidence: Option<Confidence>,
+
+    /// When this rule was last reviewed (ISO 8601 date)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub last_reviewed: Option<String>,
+
+    /// Related ticket or issue reference
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ticket: Option<String>,
+
+    /// Tags for categorization
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub tags: Option<Vec<String>>,
+}
+
+// =============================================================================
+// Core Rule Types
+// =============================================================================
+
 /// Configuration entry defining policy enforcement logic
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Rule {
@@ -17,7 +130,22 @@ pub struct Rule {
     /// Actions to take when rule matches
     pub actions: Actions,
 
-    /// Additional rule information
+    // === Phase 2 Governance Fields ===
+    /// Policy enforcement mode (enforce, warn, audit)
+    /// Default: enforce (current behavior)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub mode: Option<PolicyMode>,
+
+    /// Rule evaluation priority (higher numbers run first)
+    /// Default: 0
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub priority: Option<i32>,
+
+    /// Governance metadata (provenance, documentation)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub governance: Option<GovernanceMetadata>,
+
+    /// Legacy metadata field (for backward compatibility)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub metadata: Option<RuleMetadata>,
 }
@@ -80,6 +208,480 @@ pub struct RuleMetadata {
     /// Whether this rule is enabled
     #[serde(default = "default_enabled")]
     pub enabled: bool,
+}
+
+#[cfg(test)]
+mod governance_tests {
+    use super::*;
+
+    // =========================================================================
+    // PolicyMode Tests
+    // =========================================================================
+
+    #[test]
+    fn test_policy_mode_default() {
+        let mode = PolicyMode::default();
+        assert_eq!(mode, PolicyMode::Enforce);
+    }
+
+    #[test]
+    fn test_policy_mode_deserialize_lowercase() {
+        let enforce: PolicyMode = serde_json::from_str(r#""enforce""#).unwrap();
+        let warn: PolicyMode = serde_json::from_str(r#""warn""#).unwrap();
+        let audit: PolicyMode = serde_json::from_str(r#""audit""#).unwrap();
+
+        assert_eq!(enforce, PolicyMode::Enforce);
+        assert_eq!(warn, PolicyMode::Warn);
+        assert_eq!(audit, PolicyMode::Audit);
+    }
+
+    #[test]
+    fn test_policy_mode_serialize() {
+        assert_eq!(
+            serde_json::to_string(&PolicyMode::Enforce).unwrap(),
+            r#""enforce""#
+        );
+        assert_eq!(
+            serde_json::to_string(&PolicyMode::Warn).unwrap(),
+            r#""warn""#
+        );
+        assert_eq!(
+            serde_json::to_string(&PolicyMode::Audit).unwrap(),
+            r#""audit""#
+        );
+    }
+
+    #[test]
+    fn test_policy_mode_display() {
+        assert_eq!(format!("{}", PolicyMode::Enforce), "enforce");
+        assert_eq!(format!("{}", PolicyMode::Warn), "warn");
+        assert_eq!(format!("{}", PolicyMode::Audit), "audit");
+    }
+
+    // =========================================================================
+    // Confidence Tests
+    // =========================================================================
+
+    #[test]
+    fn test_confidence_deserialize() {
+        let high: Confidence = serde_json::from_str(r#""high""#).unwrap();
+        let medium: Confidence = serde_json::from_str(r#""medium""#).unwrap();
+        let low: Confidence = serde_json::from_str(r#""low""#).unwrap();
+
+        assert_eq!(high, Confidence::High);
+        assert_eq!(medium, Confidence::Medium);
+        assert_eq!(low, Confidence::Low);
+    }
+
+    #[test]
+    fn test_confidence_display() {
+        assert_eq!(format!("{}", Confidence::High), "high");
+        assert_eq!(format!("{}", Confidence::Medium), "medium");
+        assert_eq!(format!("{}", Confidence::Low), "low");
+    }
+
+    // =========================================================================
+    // Decision Tests
+    // =========================================================================
+
+    #[test]
+    fn test_decision_serialize() {
+        assert_eq!(
+            serde_json::to_string(&Decision::Allowed).unwrap(),
+            r#""allowed""#
+        );
+        assert_eq!(
+            serde_json::to_string(&Decision::Blocked).unwrap(),
+            r#""blocked""#
+        );
+        assert_eq!(
+            serde_json::to_string(&Decision::Warned).unwrap(),
+            r#""warned""#
+        );
+        assert_eq!(
+            serde_json::to_string(&Decision::Audited).unwrap(),
+            r#""audited""#
+        );
+    }
+
+    #[test]
+    fn test_decision_display() {
+        assert_eq!(format!("{}", Decision::Allowed), "allowed");
+        assert_eq!(format!("{}", Decision::Blocked), "blocked");
+        assert_eq!(format!("{}", Decision::Warned), "warned");
+        assert_eq!(format!("{}", Decision::Audited), "audited");
+    }
+
+    // =========================================================================
+    // GovernanceMetadata Tests
+    // =========================================================================
+
+    #[test]
+    fn test_governance_metadata_default() {
+        let meta = GovernanceMetadata::default();
+        assert!(meta.author.is_none());
+        assert!(meta.created_by.is_none());
+        assert!(meta.reason.is_none());
+        assert!(meta.confidence.is_none());
+        assert!(meta.last_reviewed.is_none());
+        assert!(meta.ticket.is_none());
+        assert!(meta.tags.is_none());
+    }
+
+    #[test]
+    fn test_governance_metadata_deserialize_full() {
+        let yaml = r"
+author: security-team
+created_by: aws-cdk-skill@1.2.0
+reason: Enforce infrastructure coding standards
+confidence: high
+last_reviewed: '2025-01-21'
+ticket: PLAT-3421
+tags:
+  - security
+  - infra
+  - compliance
+";
+        let meta: GovernanceMetadata = serde_yaml::from_str(yaml).unwrap();
+        assert_eq!(meta.author, Some("security-team".to_string()));
+        assert_eq!(meta.created_by, Some("aws-cdk-skill@1.2.0".to_string()));
+        assert_eq!(
+            meta.reason,
+            Some("Enforce infrastructure coding standards".to_string())
+        );
+        assert_eq!(meta.confidence, Some(Confidence::High));
+        assert_eq!(meta.last_reviewed, Some("2025-01-21".to_string()));
+        assert_eq!(meta.ticket, Some("PLAT-3421".to_string()));
+        assert_eq!(
+            meta.tags,
+            Some(vec![
+                "security".to_string(),
+                "infra".to_string(),
+                "compliance".to_string()
+            ])
+        );
+    }
+
+    #[test]
+    fn test_governance_metadata_deserialize_partial() {
+        let yaml = r"
+author: dev-team
+reason: Code quality
+";
+        let meta: GovernanceMetadata = serde_yaml::from_str(yaml).unwrap();
+        assert_eq!(meta.author, Some("dev-team".to_string()));
+        assert_eq!(meta.reason, Some("Code quality".to_string()));
+        assert!(meta.created_by.is_none());
+        assert!(meta.confidence.is_none());
+    }
+
+    // =========================================================================
+    // Rule Governance Field Tests
+    // =========================================================================
+
+    #[test]
+    fn test_rule_effective_mode_default() {
+        let rule = Rule {
+            name: "test".to_string(),
+            description: None,
+            matchers: Matchers {
+                tools: None,
+                extensions: None,
+                directories: None,
+                operations: None,
+                command_match: None,
+            },
+            actions: Actions {
+                inject: None,
+                run: None,
+                block: None,
+                block_if_match: None,
+            },
+            mode: None,
+            priority: None,
+            governance: None,
+            metadata: None,
+        };
+        assert_eq!(rule.effective_mode(), PolicyMode::Enforce);
+    }
+
+    #[test]
+    fn test_rule_effective_mode_explicit() {
+        let rule = Rule {
+            name: "test".to_string(),
+            description: None,
+            matchers: Matchers {
+                tools: None,
+                extensions: None,
+                directories: None,
+                operations: None,
+                command_match: None,
+            },
+            actions: Actions {
+                inject: None,
+                run: None,
+                block: None,
+                block_if_match: None,
+            },
+            mode: Some(PolicyMode::Audit),
+            priority: None,
+            governance: None,
+            metadata: None,
+        };
+        assert_eq!(rule.effective_mode(), PolicyMode::Audit);
+    }
+
+    #[test]
+    fn test_rule_effective_priority_default() {
+        let rule = Rule {
+            name: "test".to_string(),
+            description: None,
+            matchers: Matchers {
+                tools: None,
+                extensions: None,
+                directories: None,
+                operations: None,
+                command_match: None,
+            },
+            actions: Actions {
+                inject: None,
+                run: None,
+                block: None,
+                block_if_match: None,
+            },
+            mode: None,
+            priority: None,
+            governance: None,
+            metadata: None,
+        };
+        assert_eq!(rule.effective_priority(), 0);
+    }
+
+    #[test]
+    fn test_rule_effective_priority_explicit() {
+        let rule = Rule {
+            name: "test".to_string(),
+            description: None,
+            matchers: Matchers {
+                tools: None,
+                extensions: None,
+                directories: None,
+                operations: None,
+                command_match: None,
+            },
+            actions: Actions {
+                inject: None,
+                run: None,
+                block: None,
+                block_if_match: None,
+            },
+            mode: None,
+            priority: Some(100),
+            governance: None,
+            metadata: None,
+        };
+        assert_eq!(rule.effective_priority(), 100);
+    }
+
+    #[test]
+    fn test_rule_effective_priority_from_legacy_metadata() {
+        let rule = Rule {
+            name: "test".to_string(),
+            description: None,
+            matchers: Matchers {
+                tools: None,
+                extensions: None,
+                directories: None,
+                operations: None,
+                command_match: None,
+            },
+            actions: Actions {
+                inject: None,
+                run: None,
+                block: None,
+                block_if_match: None,
+            },
+            mode: None,
+            priority: None,
+            governance: None,
+            metadata: Some(RuleMetadata {
+                priority: 50,
+                timeout: 5,
+                enabled: true,
+            }),
+        };
+        assert_eq!(rule.effective_priority(), 50);
+    }
+
+    #[test]
+    fn test_rule_new_priority_takes_precedence() {
+        let rule = Rule {
+            name: "test".to_string(),
+            description: None,
+            matchers: Matchers {
+                tools: None,
+                extensions: None,
+                directories: None,
+                operations: None,
+                command_match: None,
+            },
+            actions: Actions {
+                inject: None,
+                run: None,
+                block: None,
+                block_if_match: None,
+            },
+            mode: None,
+            priority: Some(100), // New field takes precedence
+            governance: None,
+            metadata: Some(RuleMetadata {
+                priority: 50, // Legacy field
+                timeout: 5,
+                enabled: true,
+            }),
+        };
+        assert_eq!(rule.effective_priority(), 100);
+    }
+
+    // =========================================================================
+    // Priority Sorting Tests
+    // =========================================================================
+
+    #[test]
+    fn test_sort_rules_by_priority() {
+        let mut rules = vec![
+            create_test_rule("low", 0),
+            create_test_rule("high", 100),
+            create_test_rule("medium", 50),
+        ];
+
+        sort_rules_by_priority(&mut rules);
+
+        assert_eq!(rules[0].name, "high");
+        assert_eq!(rules[1].name, "medium");
+        assert_eq!(rules[2].name, "low");
+    }
+
+    #[test]
+    fn test_sort_rules_stable_for_same_priority() {
+        let mut rules = vec![
+            create_test_rule("first", 0),
+            create_test_rule("second", 0),
+            create_test_rule("third", 0),
+        ];
+
+        sort_rules_by_priority(&mut rules);
+
+        // Stable sort preserves original order for same priority
+        assert_eq!(rules[0].name, "first");
+        assert_eq!(rules[1].name, "second");
+        assert_eq!(rules[2].name, "third");
+    }
+
+    #[test]
+    fn test_sort_rules_mixed_priorities() {
+        let mut rules = vec![
+            create_test_rule("low", 0),
+            create_test_rule("very-high", 200),
+            create_test_rule("medium-1", 50),
+            create_test_rule("medium-2", 50),
+            create_test_rule("high", 100),
+        ];
+
+        sort_rules_by_priority(&mut rules);
+
+        assert_eq!(rules[0].name, "very-high");
+        assert_eq!(rules[1].name, "high");
+        // medium-1 and medium-2 preserve relative order
+        assert_eq!(rules[2].name, "medium-1");
+        assert_eq!(rules[3].name, "medium-2");
+        assert_eq!(rules[4].name, "low");
+    }
+
+    fn create_test_rule(name: &str, priority: i32) -> Rule {
+        Rule {
+            name: name.to_string(),
+            description: None,
+            matchers: Matchers {
+                tools: None,
+                extensions: None,
+                directories: None,
+                operations: None,
+                command_match: None,
+            },
+            actions: Actions {
+                inject: None,
+                run: None,
+                block: None,
+                block_if_match: None,
+            },
+            mode: None,
+            priority: Some(priority),
+            governance: None,
+            metadata: None,
+        }
+    }
+
+    // =========================================================================
+    // YAML Parsing Integration Tests
+    // =========================================================================
+
+    #[test]
+    fn test_rule_with_governance_yaml() {
+        let yaml = r#"
+name: block-force-push
+description: Prevent force pushes to protected branches
+mode: enforce
+priority: 100
+matchers:
+  tools: [Bash]
+  command_match: "git push.*--force"
+actions:
+  block: true
+governance:
+  author: security-team
+  created_by: aws-cdk-skill@1.2.0
+  reason: Enforce git safety standards
+  confidence: high
+  ticket: SEC-001
+  tags: [security, git]
+"#;
+        let rule: Rule = serde_yaml::from_str(yaml).unwrap();
+
+        assert_eq!(rule.name, "block-force-push");
+        assert_eq!(rule.effective_mode(), PolicyMode::Enforce);
+        assert_eq!(rule.effective_priority(), 100);
+
+        let gov = rule.governance.unwrap();
+        assert_eq!(gov.author, Some("security-team".to_string()));
+        assert_eq!(gov.confidence, Some(Confidence::High));
+        assert_eq!(
+            gov.tags,
+            Some(vec!["security".to_string(), "git".to_string()])
+        );
+    }
+
+    #[test]
+    fn test_rule_backward_compatible_yaml() {
+        // This is an existing v1.0 config format - must still work
+        let yaml = r"
+name: inject-context
+matchers:
+  tools: [Edit]
+actions:
+  inject: .claude/context.md
+metadata:
+  priority: 10
+  timeout: 5
+  enabled: true
+";
+        let rule: Rule = serde_yaml::from_str(yaml).unwrap();
+
+        assert_eq!(rule.name, "inject-context");
+        assert_eq!(rule.effective_mode(), PolicyMode::Enforce); // Default
+        assert_eq!(rule.effective_priority(), 10); // From legacy metadata
+        assert!(rule.governance.is_none());
+    }
 }
 
 #[cfg(test)]
@@ -696,6 +1298,45 @@ impl Default for RuleMetadata {
             enabled: default_enabled(),
         }
     }
+}
+
+// =============================================================================
+// Rule Helper Methods (Phase 2 Governance)
+// =============================================================================
+
+impl Rule {
+    /// Get the effective policy mode (defaults to Enforce)
+    #[allow(dead_code)] // Used in Phase 2.1-T05 (mode-based action execution)
+    pub fn effective_mode(&self) -> PolicyMode {
+        self.mode.unwrap_or_default()
+    }
+
+    /// Get the effective priority (defaults to 0)
+    /// Checks both new priority field and legacy metadata.priority
+    #[allow(dead_code)] // Used in Phase 2.1-T04 (priority sorting in hooks.rs)
+    pub fn effective_priority(&self) -> i32 {
+        self.priority
+            .or_else(|| self.metadata.as_ref().map(|m| m.priority))
+            .unwrap_or(0)
+    }
+
+    /// Check if the rule is enabled
+    /// Uses legacy metadata.enabled field, defaults to true
+    #[allow(dead_code)] // Used in Phase 2.1-T05 (mode-based action execution)
+    pub fn is_enabled(&self) -> bool {
+        self.metadata.as_ref().map(|m| m.enabled).unwrap_or(true)
+    }
+}
+
+/// Sort rules by priority in descending order (higher numbers first)
+/// Uses stable sort to preserve file order for same priority
+#[allow(dead_code)] // Used in Phase 2.1-T04 (will be called from hooks.rs)
+pub fn sort_rules_by_priority(rules: &mut [Rule]) {
+    rules.sort_by(|a, b| {
+        let priority_a = a.effective_priority();
+        let priority_b = b.effective_priority();
+        priority_b.cmp(&priority_a) // Descending order
+    });
 }
 
 impl Response {
