@@ -1,0 +1,12 @@
+# OQ Evidence Directory
+
+Place Operational Qualification evidence in dated subdirectories.
+
+Example:
+```
+oq/
+└── 2025-01-23/
+    ├── test-results.json
+    ├── scenarios/
+    └── evidence/
+```

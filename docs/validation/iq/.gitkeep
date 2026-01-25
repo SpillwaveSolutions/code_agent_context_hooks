@@ -1,0 +1,14 @@
+# IQ Evidence Directory
+
+Place Installation Qualification evidence in dated subdirectories.
+
+Example:
+```
+iq/
+└── 2025-01-23/
+    ├── macos-arm64/
+    │   ├── install.log
+    │   ├── version.txt
+    │   └── codesign.txt
+    └── ...
+```
