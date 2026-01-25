@@ -53,7 +53,6 @@ impl std::fmt::Display for Confidence {
 }
 
 /// Decision outcome for logging
-#[allow(dead_code)] // Used in Phase 2.2 (enhanced logging)
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum Decision {
@@ -74,6 +73,102 @@ impl std::fmt::Display for Decision {
             Decision::Blocked => write!(f, "blocked"),
             Decision::Warned => write!(f, "warned"),
             Decision::Audited => write!(f, "audited"),
+        }
+    }
+}
+
+impl std::str::FromStr for Decision {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "allowed" => Ok(Decision::Allowed),
+            "blocked" => Ok(Decision::Blocked),
+            "warned" => Ok(Decision::Warned),
+            "audited" => Ok(Decision::Audited),
+            _ => Err(format!("Invalid decision: {}", s)),
+        }
+    }
+}
+
+// =============================================================================
+// Phase 2.4: Trust Levels
+// =============================================================================
+
+/// Trust level for validator scripts
+///
+/// Indicates the provenance and verification status of a validator script.
+/// This is informational in v1.1 - enforcement planned for future versions.
+///
+/// # Trust Levels
+/// - `Local`: Script exists in the local project repository
+/// - `Verified`: Script has been cryptographically verified (future)
+/// - `Untrusted`: Script from external/untrusted source
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum TrustLevel {
+    /// Script is local to the project
+    #[default]
+    Local,
+    /// Script has been verified (cryptographic verification - future)
+    Verified,
+    /// Script from external or untrusted source
+    Untrusted,
+}
+
+impl std::fmt::Display for TrustLevel {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            TrustLevel::Local => write!(f, "local"),
+            TrustLevel::Verified => write!(f, "verified"),
+            TrustLevel::Untrusted => write!(f, "untrusted"),
+        }
+    }
+}
+
+/// Extended run action configuration supporting trust levels
+///
+/// Supports two YAML formats for backward compatibility:
+/// ```yaml
+/// # Simple format (existing)
+/// actions:
+///   run: .claude/validators/check.py
+///
+/// # Extended format (new)
+/// actions:
+///   run:
+///     script: .claude/validators/check.py
+///     trust: local
+/// ```
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(untagged)]
+pub enum RunAction {
+    /// Simple string format: just the script path
+    Simple(String),
+    /// Extended object format with trust level
+    Extended {
+        /// Path to the validator script
+        script: String,
+        /// Trust level for the script
+        #[serde(skip_serializing_if = "Option::is_none")]
+        trust: Option<TrustLevel>,
+    },
+}
+
+impl RunAction {
+    /// Get the script path regardless of format
+    pub fn script_path(&self) -> &str {
+        match self {
+            RunAction::Simple(path) => path,
+            RunAction::Extended { script, .. } => script,
+        }
+    }
+
+    /// Get the trust level (defaults to Local if not specified)
+    pub fn trust_level(&self) -> TrustLevel {
+        match self {
+            RunAction::Simple(_) => TrustLevel::Local,
+            RunAction::Extended { trust, .. } => trust.unwrap_or(TrustLevel::Local),
         }
     }
 }
@@ -181,9 +276,20 @@ pub struct Actions {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub inject: Option<String>,
 
-    /// Path to validator script to execute
+    /// Validator script to execute (supports string or object format)
+    ///
+    /// Supports two formats for backward compatibility:
+    /// ```yaml
+    /// # Simple format (existing)
+    /// run: .claude/validators/check.py
+    ///
+    /// # Extended format with trust level (new)
+    /// run:
+    ///   script: .claude/validators/check.py
+    ///   trust: local
+    /// ```
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub run: Option<String>,
+    pub run: Option<RunAction>,
 
     /// Whether to block the operation
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -192,6 +298,18 @@ pub struct Actions {
     /// Regex pattern for conditional blocking
     #[serde(skip_serializing_if = "Option::is_none")]
     pub block_if_match: Option<String>,
+}
+
+impl Actions {
+    /// Get the script path from run action (if present)
+    pub fn script_path(&self) -> Option<&str> {
+        self.run.as_ref().map(|r| r.script_path())
+    }
+
+    /// Get the trust level from run action (defaults to Local)
+    pub fn trust_level(&self) -> Option<TrustLevel> {
+        self.run.as_ref().map(|r| r.trust_level())
+    }
 }
 
 /// Additional rule metadata
@@ -310,6 +428,127 @@ mod governance_tests {
         assert_eq!(format!("{}", Decision::Blocked), "blocked");
         assert_eq!(format!("{}", Decision::Warned), "warned");
         assert_eq!(format!("{}", Decision::Audited), "audited");
+    }
+
+    #[test]
+    fn test_decision_from_str() {
+        assert_eq!("allowed".parse::<Decision>().unwrap(), Decision::Allowed);
+        assert_eq!("blocked".parse::<Decision>().unwrap(), Decision::Blocked);
+        assert_eq!("warned".parse::<Decision>().unwrap(), Decision::Warned);
+        assert_eq!("audited".parse::<Decision>().unwrap(), Decision::Audited);
+        // Case insensitive
+        assert_eq!("ALLOWED".parse::<Decision>().unwrap(), Decision::Allowed);
+        assert_eq!("Blocked".parse::<Decision>().unwrap(), Decision::Blocked);
+        // Invalid value
+        assert!("invalid".parse::<Decision>().is_err());
+    }
+
+    // =========================================================================
+    // TrustLevel Tests
+    // =========================================================================
+
+    #[test]
+    fn test_trust_level_default() {
+        assert_eq!(TrustLevel::default(), TrustLevel::Local);
+    }
+
+    #[test]
+    fn test_trust_level_serialize() {
+        assert_eq!(
+            serde_json::to_string(&TrustLevel::Local).unwrap(),
+            r#""local""#
+        );
+        assert_eq!(
+            serde_json::to_string(&TrustLevel::Verified).unwrap(),
+            r#""verified""#
+        );
+        assert_eq!(
+            serde_json::to_string(&TrustLevel::Untrusted).unwrap(),
+            r#""untrusted""#
+        );
+    }
+
+    #[test]
+    fn test_trust_level_deserialize() {
+        let local: TrustLevel = serde_json::from_str(r#""local""#).unwrap();
+        let verified: TrustLevel = serde_json::from_str(r#""verified""#).unwrap();
+        let untrusted: TrustLevel = serde_json::from_str(r#""untrusted""#).unwrap();
+
+        assert_eq!(local, TrustLevel::Local);
+        assert_eq!(verified, TrustLevel::Verified);
+        assert_eq!(untrusted, TrustLevel::Untrusted);
+    }
+
+    #[test]
+    fn test_trust_level_display() {
+        assert_eq!(format!("{}", TrustLevel::Local), "local");
+        assert_eq!(format!("{}", TrustLevel::Verified), "verified");
+        assert_eq!(format!("{}", TrustLevel::Untrusted), "untrusted");
+    }
+
+    // =========================================================================
+    // RunAction Tests
+    // =========================================================================
+
+    #[test]
+    fn test_run_action_simple_string() {
+        let yaml = r#"".claude/validators/check.py""#;
+        let action: RunAction = serde_json::from_str(yaml).unwrap();
+        assert_eq!(action.script_path(), ".claude/validators/check.py");
+        assert_eq!(action.trust_level(), TrustLevel::Local); // Default
+    }
+
+    #[test]
+    fn test_run_action_extended_with_trust() {
+        let yaml = r"
+script: .claude/validators/check.py
+trust: verified
+";
+        let action: RunAction = serde_yaml::from_str(yaml).unwrap();
+        assert_eq!(action.script_path(), ".claude/validators/check.py");
+        assert_eq!(action.trust_level(), TrustLevel::Verified);
+    }
+
+    #[test]
+    fn test_run_action_extended_without_trust() {
+        let yaml = r"
+script: .claude/validators/check.py
+";
+        let action: RunAction = serde_yaml::from_str(yaml).unwrap();
+        assert_eq!(action.script_path(), ".claude/validators/check.py");
+        assert_eq!(action.trust_level(), TrustLevel::Local); // Default
+    }
+
+    #[test]
+    fn test_actions_with_run_simple() {
+        let yaml = r"
+run: .claude/validators/test.sh
+";
+        let actions: Actions = serde_yaml::from_str(yaml).unwrap();
+        assert_eq!(actions.script_path(), Some(".claude/validators/test.sh"));
+        assert_eq!(actions.trust_level(), Some(TrustLevel::Local));
+    }
+
+    #[test]
+    fn test_actions_with_run_extended() {
+        let yaml = r"
+run:
+  script: .claude/validators/test.sh
+  trust: untrusted
+";
+        let actions: Actions = serde_yaml::from_str(yaml).unwrap();
+        assert_eq!(actions.script_path(), Some(".claude/validators/test.sh"));
+        assert_eq!(actions.trust_level(), Some(TrustLevel::Untrusted));
+    }
+
+    #[test]
+    fn test_actions_without_run() {
+        let yaml = r"
+block: true
+";
+        let actions: Actions = serde_yaml::from_str(yaml).unwrap();
+        assert_eq!(actions.script_path(), None);
+        assert_eq!(actions.trust_level(), None);
     }
 
     // =========================================================================
@@ -1026,6 +1265,27 @@ pub struct LogEntry {
     /// Per-rule evaluation details (debug mode only)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub rule_evaluations: Option<Vec<RuleEvaluation>>,
+
+    // === Phase 2.2 Governance Logging Fields ===
+    /// Policy mode from the winning/primary matched rule
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub mode: Option<PolicyMode>,
+
+    /// Priority of the winning/primary matched rule
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub priority: Option<i32>,
+
+    /// Decision outcome (Allowed, Blocked, Warned, Audited)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub decision: Option<Decision>,
+
+    /// Governance metadata from the primary matched rule
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub governance: Option<GovernanceMetadata>,
+
+    /// Trust level of validator script (if run action was executed)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub trust_level: Option<TrustLevel>,
 }
 
 /// Result of rule evaluation
