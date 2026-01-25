@@ -9,8 +9,9 @@ use crate::config::Config;
 use crate::logging::log_entry;
 use crate::models::LogMetadata;
 use crate::models::{
-    DebugConfig, Decision, Event, EventDetails, LogEntry, LogTiming, MatcherResults, Outcome,
-    PolicyMode, Response, ResponseSummary, Rule, RuleEvaluation, Timing,
+    DebugConfig, Decision, Event, EventDetails, GovernanceMetadata, LogEntry, LogTiming,
+    MatcherResults, Outcome, PolicyMode, Response, ResponseSummary, Rule, RuleEvaluation, Timing,
+    TrustLevel,
 };
 
 /// Process a hook event and return the appropriate response
@@ -30,13 +31,20 @@ pub async fn process_event(event: Event, debug_config: &DebugConfig) -> Result<R
     let event_details = EventDetails::extract(&event);
     let response_summary = ResponseSummary::from_response(&response);
 
+    // Extract governance data from the primary matched rule (first/highest priority)
+    let (primary_mode, primary_priority, primary_governance, trust_level) =
+        extract_governance_data(&matched_rules);
+
+    // Determine decision based on response and mode
+    let decision = primary_mode.map(|m| determine_decision(&response, m));
+
     // Log the event with enhanced fields
     let entry = LogEntry {
         timestamp: event.timestamp,
         event_type: format!("{:?}", event.event_type),
         session_id: event.session_id.clone(),
         tool_name: event.tool_name.clone(),
-        rules_matched: matched_rules.into_iter().map(|r| r.name.clone()).collect(),
+        rules_matched: matched_rules.iter().map(|r| r.name.clone()).collect(),
         outcome: match response.continue_ {
             true if response.context.is_some() => Outcome::Inject,
             true => Outcome::Allow,
@@ -53,7 +61,7 @@ pub async fn process_event(event: Event, debug_config: &DebugConfig) -> Result<R
                 .map(|_| vec!["injected".to_string()]),
             validator_output: None,
         }),
-        // New enhanced logging fields
+        // Enhanced logging fields (CRD-001)
         event_details: Some(event_details),
         response: Some(response_summary),
         raw_event: if debug_config.enabled {
@@ -66,6 +74,12 @@ pub async fn process_event(event: Event, debug_config: &DebugConfig) -> Result<R
         } else {
             None
         },
+        // Phase 2.2 Governance logging fields
+        mode: primary_mode,
+        priority: primary_priority,
+        decision,
+        governance: primary_governance,
+        trust_level,
     };
 
     // Log asynchronously (don't fail the response if logging fails)
@@ -79,6 +93,27 @@ pub async fn process_event(event: Event, debug_config: &DebugConfig) -> Result<R
     });
 
     Ok(response)
+}
+
+/// Extract governance data from matched rules
+/// Returns (mode, priority, governance, trust_level) from the primary (first) matched rule
+fn extract_governance_data(
+    matched_rules: &[&Rule],
+) -> (
+    Option<PolicyMode>,
+    Option<i32>,
+    Option<GovernanceMetadata>,
+    Option<TrustLevel>,
+) {
+    if let Some(primary) = matched_rules.first() {
+        let mode = Some(primary.effective_mode());
+        let priority = Some(primary.effective_priority());
+        let governance = primary.governance.clone();
+        let trust_level = primary.actions.trust_level();
+        (mode, priority, governance, trust_level)
+    } else {
+        (None, None, None, None)
+    }
 }
 
 /// Evaluate all enabled rules against an event
@@ -347,7 +382,7 @@ async fn execute_rule_actions(event: &Event, rule: &Rule, config: &Config) -> Re
     }
 
     // Handle script execution
-    if let Some(ref script_path) = actions.run {
+    if let Some(script_path) = actions.script_path() {
         match execute_validator_script(event, script_path, rule, config).await {
             Ok(script_response) => {
                 return Ok(script_response);
@@ -570,7 +605,7 @@ async fn execute_rule_actions_warn_mode(
     }
 
     // Script execution - convert blocks to warnings
-    if let Some(ref script_path) = actions.run {
+    if let Some(script_path) = actions.script_path() {
         match execute_validator_script(event, script_path, rule, config).await {
             Ok(script_response) => {
                 if !script_response.continue_ {
