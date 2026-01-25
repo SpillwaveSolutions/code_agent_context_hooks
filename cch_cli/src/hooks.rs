@@ -514,6 +514,9 @@ mod tests {
                 run: None,
                 block_if_match: None,
             },
+            mode: None,
+            priority: None,
+            governance: None,
             metadata: None,
         };
 
@@ -549,6 +552,9 @@ mod tests {
                 run: None,
                 block_if_match: None,
             },
+            mode: None,
+            priority: None,
+            governance: None,
             metadata: None,
         };
 
