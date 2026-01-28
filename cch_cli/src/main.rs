@@ -225,7 +225,7 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
-async fn process_hook_event(cli: &Cli, config: &config::Config) -> Result<()> {
+async fn process_hook_event(cli: &Cli, _config: &config::Config) -> Result<()> {
     let mut buffer = String::new();
     io::stdin().read_to_string(&mut buffer)?;
 
@@ -241,12 +241,29 @@ async fn process_hook_event(cli: &Cli, config: &config::Config) -> Result<()> {
 
     info!(
         "Processing event: {} ({})",
-        event.event_type, event.session_id
+        event.hook_event_name, event.session_id
     );
 
-    let debug_config = models::DebugConfig::new(cli.debug_logs, config.settings.debug_logs);
+    // Reload config using the event's cwd so we read the correct project's hooks.yaml
+    let project_config =
+        config::Config::load(event.cwd.as_ref().map(|p| std::path::Path::new(p.as_str())))?;
+    let debug_config = models::DebugConfig::new(cli.debug_logs, project_config.settings.debug_logs);
     let response = hooks::process_event(event, &debug_config).await?;
 
+    if !response.continue_ {
+        // Claude Code hooks protocol: exit code 2 BLOCKS the tool call.
+        // Only stderr is used as the error message and fed back to Claude.
+        // Exit code 0 with "continue":false only stops the conversation,
+        // it does NOT prevent the tool from executing.
+        let reason = response
+            .reason
+            .as_deref()
+            .unwrap_or("Blocked by CCH policy");
+        eprintln!("{}", reason);
+        std::process::exit(2);
+    }
+
+    // For allowed responses (with or without context injection), output JSON to stdout
     let json = serde_json::to_string(&response)?;
     println!("{}", json);
 
