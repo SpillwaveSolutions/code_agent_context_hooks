@@ -37,7 +37,11 @@ struct HooksConfig {
     post_tool_use: Vec<MatcherEntry>,
     #[serde(rename = "Stop", default, skip_serializing_if = "Vec::is_empty")]
     stop: Vec<MatcherEntry>,
-    #[serde(rename = "SessionStart", default, skip_serializing_if = "Vec::is_empty")]
+    #[serde(
+        rename = "SessionStart",
+        default,
+        skip_serializing_if = "Vec::is_empty"
+    )]
     session_start: Vec<MatcherEntry>,
 }
 

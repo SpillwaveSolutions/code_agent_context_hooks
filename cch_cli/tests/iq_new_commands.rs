@@ -275,10 +275,7 @@ fn test_install_creates_settings_json() {
         content.contains("PostToolUse"),
         "Should have PostToolUse hook"
     );
-    assert!(
-        content.contains("Stop"),
-        "Should have Stop hook"
-    );
+    assert!(content.contains("Stop"), "Should have Stop hook");
     assert!(
         content.contains("SessionStart"),
         "Should have SessionStart hook"

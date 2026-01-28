@@ -245,9 +245,8 @@ async fn process_hook_event(cli: &Cli, _config: &config::Config) -> Result<()> {
     );
 
     // Reload config using the event's cwd so we read the correct project's hooks.yaml
-    let project_config = config::Config::load(
-        event.cwd.as_ref().map(|p| std::path::Path::new(p.as_str())),
-    )?;
+    let project_config =
+        config::Config::load(event.cwd.as_ref().map(|p| std::path::Path::new(p.as_str())))?;
     let debug_config = models::DebugConfig::new(cli.debug_logs, project_config.settings.debug_logs);
     let response = hooks::process_event(event, &debug_config).await?;
 
