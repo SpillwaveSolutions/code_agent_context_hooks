@@ -18,8 +18,8 @@ use crate::models::{
 pub async fn process_event(event: Event, debug_config: &DebugConfig) -> Result<Response> {
     let start_time = std::time::Instant::now();
 
-    // Load configuration
-    let config = Config::load(None)?;
+    // Load configuration using the event's cwd (sent by Claude Code) for project-level config
+    let config = Config::load(event.cwd.as_ref().map(|p| Path::new(p.as_str())))?;
 
     // Evaluate rules (with optional debug tracking)
     let (matched_rules, response, rule_evaluations) =
