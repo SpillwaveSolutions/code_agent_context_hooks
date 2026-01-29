@@ -298,6 +298,11 @@ tasks:
     cmds:
       - task: ui:dev:tauri
 
+  run-app:
+    desc: Run the RuleZ UI desktop app
+    cmds:
+      - task: ui:dev:tauri
+
   # ===========================================================================
   # CI/CD Tasks
   # ===========================================================================
