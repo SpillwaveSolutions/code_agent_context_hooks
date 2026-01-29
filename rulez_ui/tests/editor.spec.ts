@@ -5,7 +5,7 @@ test.describe("Monaco Editor", () => {
     await page.goto("/");
     // Load a file to show the editor
     await page.waitForTimeout(500);
-    const globalFile = page.getByRole("button", { name: /hooks\.yaml/i }).first();
+    const globalFile = page.locator('[data-testid="sidebar-global-file-hooks.yaml"]');
     await globalFile.click();
     await page.waitForTimeout(500);
   });
@@ -41,8 +41,8 @@ test.describe("Monaco Editor", () => {
 
   test("should show editor toolbar", async ({ page }) => {
     // Check for toolbar buttons
-    const toolbar = page.locator('[class*="toolbar"]');
-    await expect(toolbar.first()).toBeVisible();
+    const toolbar = page.locator('[data-testid="editor-toolbar"]');
+    await expect(toolbar).toBeVisible();
   });
 
   test("should handle theme changes in editor", async ({ page }) => {

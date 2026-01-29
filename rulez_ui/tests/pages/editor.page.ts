@@ -13,9 +13,9 @@ export class EditorPage extends BasePage {
   constructor(page: Page) {
     super(page);
 
-    this.container = page.locator("[data-testid='editor-container']").or(
-      page.locator(".monaco-editor").first()
-    );
+    this.container = page
+      .locator("[data-testid='editor-container']")
+      .or(page.locator(".monaco-editor").first());
     this.monacoEditor = page.locator(".monaco-editor");
     this.textArea = page.locator(".monaco-editor textarea");
   }
@@ -34,7 +34,11 @@ export class EditorPage extends BasePage {
   async getContent(): Promise<string> {
     return this.page.evaluate(() => {
       // Access Monaco editor model through window
-      const editors = (window as unknown as { monaco?: { editor: { getEditors: () => Array<{ getValue: () => string }> } } }).monaco?.editor.getEditors();
+      const editors = (
+        window as unknown as {
+          monaco?: { editor: { getEditors: () => Array<{ getValue: () => string }> } };
+        }
+      ).monaco?.editor.getEditors();
       if (editors && editors.length > 0) {
         return editors[0].getValue();
       }
@@ -47,7 +51,11 @@ export class EditorPage extends BasePage {
    */
   async setContent(content: string): Promise<void> {
     await this.page.evaluate((text) => {
-      const editors = (window as unknown as { monaco?: { editor: { getEditors: () => Array<{ setValue: (value: string) => void }> } } }).monaco?.editor.getEditors();
+      const editors = (
+        window as unknown as {
+          monaco?: { editor: { getEditors: () => Array<{ setValue: (value: string) => void }> } };
+        }
+      ).monaco?.editor.getEditors();
       if (editors && editors.length > 0) {
         editors[0].setValue(text);
       }
@@ -108,9 +116,9 @@ export class EditorPage extends BasePage {
    */
   async hasUnsavedChanges(): Promise<boolean> {
     // Look for modified indicator (usually a dot or asterisk in tab)
-    const modifiedIndicator = this.page.locator("[data-testid='modified-indicator']").or(
-      this.page.locator("text=/\\*.*\\.yaml/")
-    );
+    const modifiedIndicator = this.page
+      .locator("[data-testid='modified-indicator']")
+      .or(this.page.locator("text=/\\*.*\\.yaml/"));
     return modifiedIndicator.isVisible();
   }
 
@@ -152,8 +160,14 @@ export class EditorPage extends BasePage {
    */
   async getErrorCount(): Promise<number> {
     return this.page.evaluate(() => {
-      const markers = (window as unknown as { monaco?: { editor: { getModelMarkers: (opts: object) => Array<unknown> } } }).monaco?.editor.getModelMarkers({});
-      return markers?.filter((m: unknown) => (m as { severity: number }).severity === 8).length || 0;
+      const markers = (
+        window as unknown as {
+          monaco?: { editor: { getModelMarkers: (opts: object) => Array<unknown> } };
+        }
+      ).monaco?.editor.getModelMarkers({});
+      return (
+        markers?.filter((m: unknown) => (m as { severity: number }).severity === 8).length || 0
+      );
     });
   }
 
@@ -162,8 +176,14 @@ export class EditorPage extends BasePage {
    */
   async getWarningCount(): Promise<number> {
     return this.page.evaluate(() => {
-      const markers = (window as unknown as { monaco?: { editor: { getModelMarkers: (opts: object) => Array<unknown> } } }).monaco?.editor.getModelMarkers({});
-      return markers?.filter((m: unknown) => (m as { severity: number }).severity === 4).length || 0;
+      const markers = (
+        window as unknown as {
+          monaco?: { editor: { getModelMarkers: (opts: object) => Array<unknown> } };
+        }
+      ).monaco?.editor.getModelMarkers({});
+      return (
+        markers?.filter((m: unknown) => (m as { severity: number }).severity === 4).length || 0
+      );
     });
   }
 }

@@ -32,18 +32,12 @@ export class AppShellPage extends BasePage {
     this.themeToggle = page.getByRole("button", { name: /mode|preference/i });
 
     // Layout areas
-    this.sidebar = page.locator("[data-testid='sidebar']").or(
-      page.locator("aside").first()
-    );
-    this.mainContent = page.locator("[data-testid='main-content']").or(
-      page.locator("main").first()
-    );
-    this.rightPanel = page.locator("[data-testid='right-panel']").or(
-      page.locator("aside").last()
-    );
-    this.statusBar = page.locator("[data-testid='status-bar']").or(
-      page.locator("footer").first()
-    );
+    this.sidebar = page.locator("[data-testid='sidebar']").or(page.locator("aside").first());
+    this.mainContent = page
+      .locator("[data-testid='main-content']")
+      .or(page.locator("main").first());
+    this.rightPanel = page.locator("[data-testid='right-panel']").or(page.locator("aside").last());
+    this.statusBar = page.locator("[data-testid='status-bar']").or(page.locator("footer").first());
 
     // Right panel tabs
     this.simulatorTab = page.getByRole("button", { name: "Simulator" });
@@ -99,8 +93,8 @@ export class AppShellPage extends BasePage {
     if (!match) return null;
 
     return {
-      line: parseInt(match[1], 10),
-      column: parseInt(match[2], 10),
+      line: Number.parseInt(match[1], 10),
+      column: Number.parseInt(match[2], 10),
     };
   }
 

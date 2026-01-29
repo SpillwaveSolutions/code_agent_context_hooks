@@ -68,7 +68,7 @@ test.describe("RuleZ UI Application", () => {
     await expect(page.getByText(/Ln \d+, Col \d+/)).toBeVisible();
 
     // Check for file type
-    await expect(page.getByText("YAML")).toBeVisible();
+    await expect(page.getByText("YAML", { exact: true })).toBeVisible();
 
     // Check for encoding
     await expect(page.getByText("UTF-8")).toBeVisible();
@@ -81,13 +81,13 @@ test.describe("RuleZ UI Application", () => {
     await page.waitForTimeout(500);
 
     // Click on the global hooks.yaml file
-    const globalFile = page.getByRole("button", { name: /hooks\.yaml/i }).first();
+    const globalFile = page.locator('[data-testid="sidebar-global-file-hooks.yaml"]');
     await globalFile.click();
 
     // Wait for file to load
     await page.waitForTimeout(200);
 
     // Check that file tab appears
-    await expect(page.getByText("hooks.yaml")).toBeVisible();
+    await expect(page.locator('[data-testid="file-tab-hooks.yaml"]')).toBeVisible();
   });
 });

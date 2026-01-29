@@ -11,34 +11,28 @@ export class FileTabBarPage extends BasePage {
   constructor(page: Page) {
     super(page);
 
-    this.container = page.locator("[data-testid='file-tab-bar']").or(
-      page.locator("[role='tablist']").first()
-    );
+    this.container = page.locator('[data-testid="file-tab-bar"]');
   }
 
   /**
    * Get all open tabs
    */
   getTabs(): Locator {
-    return this.container.locator("[role='tab']").or(
-      this.container.locator("button")
-    );
+    return this.page.locator('[data-testid^="file-tab-"]');
   }
 
   /**
    * Get a specific tab by filename
    */
   getTab(filename: string): Locator {
-    return this.container.getByText(filename, { exact: false });
+    return this.page.locator(`[data-testid="file-tab-${filename}"]`);
   }
 
   /**
    * Get the active (selected) tab
    */
   getActiveTab(): Locator {
-    return this.container.locator("[aria-selected='true']").or(
-      this.container.locator(".active")
-    );
+    return this.container.locator("[aria-selected='true']").or(this.container.locator(".active"));
   }
 
   /**
@@ -75,19 +69,15 @@ export class FileTabBarPage extends BasePage {
    * Close a tab by filename
    */
   async closeTab(filename: string): Promise<void> {
-    const tab = this.getTab(filename);
-    // Look for close button within the tab
-    const closeButton = tab.locator("[data-testid='close-tab']").or(
-      tab.locator("button").or(
-        tab.locator("svg")
-      )
-    );
+    // Use the specific close button with data-testid
+    const closeButton = this.page.locator(`[data-testid="close-tab-${filename}"]`);
 
     // If there's a close button, click it
     if (await closeButton.isVisible()) {
       await closeButton.click();
     } else {
-      // Middle-click to close
+      // Fall back to middle-click on the tab
+      const tab = this.getTab(filename);
       await tab.click({ button: "middle" });
     }
     await this.waitBriefly(200);

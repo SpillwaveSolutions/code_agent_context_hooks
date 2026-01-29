@@ -47,6 +47,7 @@ export function EventForm({ onSubmit, isLoading }: EventFormProps) {
           Event Type
         </label>
         <select
+          data-testid="event-type-select"
           id="event-type"
           value={eventType}
           onChange={(e) => setEventType(e.target.value as EventType | "")}
@@ -69,11 +70,12 @@ export function EventForm({ onSubmit, isLoading }: EventFormProps) {
           Tool
         </label>
         <input
+          data-testid="tool-input"
           id="tool"
           type="text"
           value={tool}
           onChange={(e) => setTool(e.target.value)}
-          placeholder="e.g., Bash"
+          placeholder="Tool (e.g., Bash)"
           className={inputClassName}
         />
       </div>
@@ -86,11 +88,12 @@ export function EventForm({ onSubmit, isLoading }: EventFormProps) {
           Command
         </label>
         <input
+          data-testid="command-input"
           id="command"
           type="text"
           value={command}
           onChange={(e) => setCommand(e.target.value)}
-          placeholder="e.g., git push --force"
+          placeholder="Command (e.g., git push --force)"
           className={inputClassName}
         />
       </div>
@@ -103,16 +106,18 @@ export function EventForm({ onSubmit, isLoading }: EventFormProps) {
           Path
         </label>
         <input
+          data-testid="path-input"
           id="path"
           type="text"
           value={path}
           onChange={(e) => setPath(e.target.value)}
-          placeholder="e.g., /src/main.ts"
+          placeholder="Path (e.g., /src/main.ts)"
           className={inputClassName}
         />
       </div>
 
       <button
+        data-testid="simulate-button"
         type="submit"
         disabled={!eventType || isLoading}
         className="w-full px-4 py-2 text-sm font-medium text-white bg-accent hover:bg-accent/90 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"

@@ -35,25 +35,25 @@ export class SimulatorPage extends BasePage {
     super(page);
 
     // Form elements
-    this.container = page.locator("[data-testid='simulator']").or(
-      page.getByText("Debug Simulator").locator("..")
-    );
-    this.eventTypeSelect = page.locator("select").first();
-    this.toolInput = page.getByPlaceholder(/tool/i);
-    this.commandInput = page.getByPlaceholder(/command/i);
-    this.pathInput = page.getByPlaceholder(/path/i);
-    this.simulateButton = page.getByRole("button", { name: /simulate/i });
+    this.container = page
+      .locator("[data-testid='simulator']")
+      .or(page.getByText("Debug Simulator").locator(".."));
+    this.eventTypeSelect = page.locator('[data-testid="event-type-select"]');
+    this.toolInput = page.locator('[data-testid="tool-input"]');
+    this.commandInput = page.locator('[data-testid="command-input"]');
+    this.pathInput = page.locator('[data-testid="path-input"]');
+    this.simulateButton = page.locator('[data-testid="simulate-button"]');
     this.clearButton = page.getByRole("button", { name: /clear/i });
 
     // Result elements
-    this.resultArea = page.locator("[data-testid='simulation-result']").or(
-      page.locator("text=/Allow|Block|Inject/i").locator("..")
-    );
+    this.resultArea = page
+      .locator("[data-testid='simulation-result']")
+      .or(page.locator("text=/Allow|Block|Inject/i").locator(".."));
     this.outcomeBadge = page.locator("text=/Allow|Block|Inject/i").first();
     this.matchedRulesSection = page.getByText(/matched|rules/i).first();
-    this.evaluationTrace = page.locator("[data-testid='evaluation-trace']").or(
-      page.getByText(/evaluation/i).first()
-    );
+    this.evaluationTrace = page
+      .locator("[data-testid='evaluation-trace']")
+      .or(page.getByText(/evaluation/i).first());
   }
 
   /**
@@ -175,7 +175,7 @@ export class SimulatorPage extends BasePage {
     if (!text) return null;
 
     const match = text.match(/(\d+)\s*rule/i);
-    return match ? parseInt(match[1], 10) : null;
+    return match ? Number.parseInt(match[1], 10) : null;
   }
 
   /**
