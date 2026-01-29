@@ -47,7 +47,10 @@ export function FileTabBar() {
 
   return (
     <>
-      <div className="flex items-center border-b border-gray-200 dark:border-gray-700 bg-surface dark:bg-surface-dark overflow-x-auto">
+      <div
+        data-testid="file-tab-bar"
+        className="flex items-center border-b border-gray-200 dark:border-gray-700 bg-surface dark:bg-surface-dark overflow-x-auto"
+      >
         {files.map(([path, state]) => (
           <FileTab
             key={path}
@@ -85,6 +88,7 @@ function FileTab({ path, modified, isActive, onClick, onClose }: FileTabProps) {
 
   return (
     <div
+      data-testid={`file-tab-${fileName}`}
       className={`group relative flex items-center border-r border-gray-200 dark:border-gray-700 transition-colors ${
         isActive
           ? "bg-white dark:bg-[#1A1A1A] text-gray-900 dark:text-gray-100"
@@ -123,6 +127,7 @@ function FileTab({ path, modified, isActive, onClick, onClose }: FileTabProps) {
       {/* Close button */}
       <button
         type="button"
+        data-testid={`close-tab-${fileName}`}
         onClick={onClose}
         className="p-0.5 mr-2 rounded hover:bg-gray-200 dark:hover:bg-gray-700 opacity-0 group-hover:opacity-100 transition-opacity"
         aria-label={`Close ${fileName}`}

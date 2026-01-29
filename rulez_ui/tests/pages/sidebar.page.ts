@@ -13,9 +13,7 @@ export class SidebarPage extends BasePage {
   constructor(page: Page) {
     super(page);
 
-    this.container = page.locator("[data-testid='sidebar']").or(
-      page.locator("aside").first()
-    );
+    this.container = page.locator('[data-testid="sidebar"]');
     this.globalSection = page.getByText("Global");
     this.projectSection = page.getByText("Project");
   }
@@ -32,30 +30,46 @@ export class SidebarPage extends BasePage {
    * Get all file buttons in the sidebar
    */
   getFileButtons(): Locator {
-    return this.page.getByRole("button", { name: /\.yaml$/i });
+    return this.page.locator('[data-testid^="sidebar-"][data-testid*="-file-"]');
   }
 
   /**
    * Get global hooks.yaml file button
    */
   getGlobalHooksFile(): Locator {
-    return this.page.getByRole("button", { name: /hooks\.yaml/i }).first();
+    return this.page.locator('[data-testid="sidebar-global-file-hooks.yaml"]');
   }
 
   /**
    * Get project hooks.yaml file button
    */
   getProjectHooksFile(): Locator {
-    return this.page.getByRole("button", { name: /hooks\.yaml/i }).last();
+    return this.page.locator('[data-testid="sidebar-project-file-hooks.yaml"]');
   }
 
   /**
-   * Click on a file by name
+   * Click on a file by name in the global section
    */
-  async selectFile(filename: string): Promise<void> {
-    const fileButton = this.page.getByRole("button", { name: new RegExp(filename, "i") });
+  async selectGlobalFile(filename: string): Promise<void> {
+    const fileButton = this.page.locator(`[data-testid="sidebar-global-file-${filename}"]`);
     await fileButton.click();
     await this.waitBriefly(200);
+  }
+
+  /**
+   * Click on a file by name in the project section
+   */
+  async selectProjectFile(filename: string): Promise<void> {
+    const fileButton = this.page.locator(`[data-testid="sidebar-project-file-${filename}"]`);
+    await fileButton.click();
+    await this.waitBriefly(200);
+  }
+
+  /**
+   * Click on a file by name (defaults to global section for backwards compatibility)
+   */
+  async selectFile(filename: string): Promise<void> {
+    await this.selectGlobalFile(filename);
   }
 
   /**
@@ -75,12 +89,17 @@ export class SidebarPage extends BasePage {
   }
 
   /**
-   * Check if a file is currently selected (active)
+   * Check if a file is currently selected (active) in the global section
    */
   async isFileSelected(filename: string): Promise<boolean> {
-    const fileButton = this.page.getByRole("button", { name: new RegExp(filename, "i") });
+    const fileButton = this.page.locator(`[data-testid="sidebar-global-file-${filename}"]`);
     const classList = await fileButton.getAttribute("class");
-    return classList?.includes("active") || classList?.includes("selected") || false;
+    return (
+      classList?.includes("active") ||
+      classList?.includes("selected") ||
+      classList?.includes("accent") ||
+      false
+    );
   }
 
   /**

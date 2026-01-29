@@ -29,20 +29,14 @@ export class BasePage {
   /**
    * Wait for an element to be visible with timeout
    */
-  async waitForVisible(
-    locator: Locator,
-    timeout = 5000
-  ): Promise<void> {
+  async waitForVisible(locator: Locator, timeout = 5000): Promise<void> {
     await locator.waitFor({ state: "visible", timeout });
   }
 
   /**
    * Wait for an element to be hidden
    */
-  async waitForHidden(
-    locator: Locator,
-    timeout = 5000
-  ): Promise<void> {
+  async waitForHidden(locator: Locator, timeout = 5000): Promise<void> {
     await locator.waitFor({ state: "hidden", timeout });
   }
 

@@ -298,6 +298,12 @@ tasks:
     cmds:
       - task: ui:dev:tauri
 
+  run-app:
+    desc: Run the RuleZ UI desktop app
+    cmds:
+      - lsof -ti:1420 | xargs kill -9 2>/dev/null || true
+      - task: ui:dev:tauri
+
   # ===========================================================================
   # CI/CD Tasks
   # ===========================================================================

@@ -40,7 +40,10 @@ export function Sidebar() {
   };
 
   return (
-    <aside className="w-56 flex-shrink-0 border-r border-gray-200 dark:border-gray-700 bg-surface dark:bg-surface-dark overflow-y-auto">
+    <aside
+      data-testid="sidebar"
+      className="w-56 flex-shrink-0 border-r border-gray-200 dark:border-gray-700 bg-surface dark:bg-surface-dark overflow-y-auto"
+    >
       <div className="p-3">
         <h2 className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2">
           Files
@@ -71,6 +74,7 @@ export function Sidebar() {
               exists={globalConfig.exists}
               isActive={activeFile === globalConfig.path}
               onClick={() => handleFileClick(globalConfig.path)}
+              section="global"
             />
           ) : (
             <div className="text-sm text-gray-400 dark:text-gray-500 italic pl-5">Loading...</div>
@@ -102,6 +106,7 @@ export function Sidebar() {
               exists={projectConfig.exists}
               isActive={activeFile === projectConfig.path}
               onClick={() => handleFileClick(projectConfig.path)}
+              section="project"
             />
           ) : (
             <div className="text-sm text-gray-400 dark:text-gray-500 italic pl-5">
@@ -119,14 +124,16 @@ interface FileItemProps {
   exists: boolean;
   isActive: boolean;
   onClick: () => void;
+  section: "global" | "project";
 }
 
-function FileItem({ path, exists, isActive, onClick }: FileItemProps) {
+function FileItem({ path, exists, isActive, onClick, section }: FileItemProps) {
   const fileName = path.split("/").pop() || path;
 
   return (
     <button
       type="button"
+      data-testid={`sidebar-${section}-file-${fileName}`}
       onClick={onClick}
       className={`w-full flex items-center gap-2 px-2 py-1.5 rounded text-sm text-left transition-colors ${
         isActive

@@ -21,21 +21,17 @@ export class DialogsPage extends BasePage {
     super(page);
 
     // Dialog backdrop/overlay
-    this.overlay = page.locator("[data-testid='dialog-overlay']").or(
-      page.locator(".overlay").or(
-        page.locator("[role='dialog']").locator("..")
-      )
-    );
+    this.overlay = page
+      .locator("[data-testid='dialog-overlay']")
+      .or(page.locator(".overlay").or(page.locator("[role='dialog']").locator("..")));
 
     // Generic dialog
-    this.dialog = page.locator("[role='dialog']").or(
-      page.locator("[data-testid='dialog']")
-    );
+    this.dialog = page.locator("[role='dialog']").or(page.locator("[data-testid='dialog']"));
 
     // Confirm dialog specifics
-    this.confirmDialog = page.locator("[data-testid='confirm-dialog']").or(
-      page.locator("[role='alertdialog']")
-    );
+    this.confirmDialog = page
+      .locator("[data-testid='confirm-dialog']")
+      .or(page.locator("[role='alertdialog']"));
     this.confirmTitle = this.dialog.locator("h2, h3, [data-testid='dialog-title']");
     this.confirmMessage = this.dialog.locator("p, [data-testid='dialog-message']");
     this.confirmButton = page.getByRole("button", { name: /confirm|ok|yes|save|delete/i });

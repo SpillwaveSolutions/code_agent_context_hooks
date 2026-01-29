@@ -31,7 +31,10 @@ export function EditorToolbar() {
   };
 
   return (
-    <div className="flex items-center gap-1 px-2 py-1 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#252525]">
+    <div
+      data-testid="editor-toolbar"
+      className="flex items-center gap-1 px-2 py-1 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#252525]"
+    >
       <ToolbarButton onClick={handleUndo} title="Undo (Ctrl+Z)">
         <UndoIcon />
       </ToolbarButton>
